@@ -43,9 +43,6 @@ class AgeDBHandler:
         self.trainDataset, self.validateDataset, self.testDataset, _ = torch.utils.data.random_split(
             dataset, [train_len, validate_len, test_len, others_len])
 
-        # noinspection PyUnusedLocal
-        dataset = None
-
         train_loader = DataLoader(self.trainDataset, batch_size=batch_size)
         validate_loader = DataLoader(self.validateDataset, batch_size=batch_size)
         test_loader = DataLoader(self.testDataset, batch_size=batch_size)
@@ -56,7 +53,7 @@ class AgeDBHandler:
         if os.path.exists(self.directory):
             if len(os.listdir(self.directory)) != 0:
                 print('AgeDB Already Exists on ' +
-                      self.directory + '.We will use it!')
+                      self.directory + '. We will use it!')
                 return
             
         print('Could not find AgeDB on', self.directory)
@@ -77,7 +74,7 @@ class AgeDBHandler:
 class AgeDBDataset(Dataset):
     def __init__(self, directory, transform, preload=False, device: torch.device = torch.device('cpu'), **kwargs):
         self.device = device
-        self.directory = directory if kwargs.get('usePreprocessed', 0) == 0 else os.path.join(directory, 'preProcessed')
+        self.directory = directory
         self.transform = transform
         gender_to_class_id = {'m': 0, 'f': 1}
         self.labels = []
@@ -123,5 +120,8 @@ class AgeDBDataset(Dataset):
             if self.transform is not None:
                 image = self.transform(image).to(self.device)
 
-        labels = {'age': self.labels[idx]['age'], 'gender': self.labels[idx]['gender']}
+        labels = {
+            'age': self.labels[idx]['age'], 
+            'gender': self.labels[idx]['gender'],
+        }
         return image.to(self.device), labels
