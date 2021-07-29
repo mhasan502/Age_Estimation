@@ -10,7 +10,7 @@ from torch.utils.data import DataLoader, Dataset
 zip_pass = decouple.config("ZIP_KEY")
 
 class AgeDBHandler:
-    def __init__(self, datasets_dir, preload=False, use_preprocessed=True, device: torch.device = torch.device('cpu')):
+    def __init__(self, datasets_dir, preload=False, device: torch.device = torch.device('cpu')):
         self.device = device
         self.preload = preload
 
@@ -24,36 +24,9 @@ class AgeDBHandler:
 
         self._prepare_on_disk()
 
-    def get_loaders(self, transform, train_size=0.7, validate_size=0.2, test_size=0.1, batch_size=15, **kwargs):
-        if round(train_size + validate_size + test_size, 1) > 1.0:
-            sys.exit("Sum of the percentages should be less than 1. it's " + str(
-                train_size + validate_size + test_size) + " now!")
-
-        dataset = AgeDBDataset(directory=self.directory,
-                               transform=transform,
-                               preload=self.preload,
-                               device=self.device,
-                               **kwargs)
-
-        train_len = int(len(dataset) * train_size)
-        validate_len = int(len(dataset) * validate_size)
-        test_len = int(len(dataset) * test_size)
-        others_len = len(dataset) - train_len - validate_len - test_len
-
-        self.trainDataset, self.validateDataset, self.testDataset, _ = torch.utils.data.random_split(
-            dataset, [train_len, validate_len, test_len, others_len])
-
-        train_loader = DataLoader(self.trainDataset, batch_size=batch_size)
-        validate_loader = DataLoader(self.validateDataset, batch_size=batch_size)
-        test_loader = DataLoader(self.testDataset, batch_size=batch_size)
-
-        return train_loader, validate_loader, test_loader
-
     def _prepare_on_disk(self):
         if os.path.exists(self.directory):
-            if len(os.listdir(self.directory)) != 0:
-                print('AgeDB Already Exists on ' +
-                      self.directory + '. We will use it!')
+            if len(os.listdir(self.directory)) != 0:    # Already directory exists
                 return
             
         print('Could not find AgeDB on', self.directory)
@@ -76,14 +49,11 @@ class AgeDBDataset(Dataset):
         self.device = device
         self.directory = directory
         self.transform = transform
-        gender_to_class_id = {'m': 0, 'f': 1}
         self.labels = []
         self.images = []
         self.preload = preload
 
         for i, file in enumerate(os.listdir(self.directory)):
-            if file.endswith(('_2.jpg', '_3.jpg')):  # TODO
-                continue
             file_labels = parse('{}_{}_{age}_{gender}.jpg', file)
             
             if file_labels is None:
@@ -91,13 +61,17 @@ class AgeDBDataset(Dataset):
                 
             if self.preload:
                 image = Image.open(os.path.join(self.directory, file)).convert('RGB')
-                
                 if self.transform is not None:
                     image = self.transform(image).to(self.device)
             else:
                 image = os.path.join(self.directory, file)
 
             self.images.append(image)
+            
+            gender_to_class_id = {
+                'm': 0, 
+                'f': 1
+            }
             gender = gender_to_class_id[file_labels['gender']]
             age = int(file_labels['age'])
             self.labels.append({
@@ -125,3 +99,21 @@ class AgeDBDataset(Dataset):
             'gender': self.labels[idx]['gender'],
         }
         return image.to(self.device), labels
+    
+    def get_loaders(self, transform, batch_size, train_size=0.7, test_size=0.2, **kwargs):
+        train_len = int(len(self) * train_size)
+        test_len = int(len(self) * test_size)
+        validate_len = len(self) - (train_len + test_len)
+        
+        self.trainDataset, self.validateDataset, self.testDataset = torch.utils.data.random_split(
+            dataset = self, 
+            lengths = [train_len, validate_len, test_len], 
+            generator = torch.Generator().manual_seed(42)
+        )
+
+        train_loader = DataLoader(self.trainDataset, batch_size=batch_size)
+        validate_loader = DataLoader(self.validateDataset, batch_size=batch_size)
+        test_loader = DataLoader(self.testDataset, batch_size=batch_size)
+
+        return train_loader, validate_loader, test_loader
+   
