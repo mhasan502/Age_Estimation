@@ -3,3 +3,5 @@
 AgeDB/
 __pycache__/
 .ipynb_checkpoints/
+cropped_face/
+runs/

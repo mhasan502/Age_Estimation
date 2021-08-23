@@ -63,21 +63,28 @@ class AgeDBDataset(Dataset):
                 image = Image.open(os.path.join(self.directory, file)).convert('RGB')
                 if self.transform is not None:
                     image = self.transform(image).to(self.device)
+            
             else:
                 image = os.path.join(self.directory, file)
-
-            self.images.append(image)
+                
             
             gender_to_class_id = {
                 'm': 0, 
                 'f': 1
             }
+            
             gender = gender_to_class_id[file_labels['gender']]
             age = int(file_labels['age'])
+            
+            if age < 18 or age > 78:
+                continue
+            
+            self.images.append(image)
             self.labels.append({
                 'age': age,
                 'gender': gender
             })
+            
         pass
 
     def __len__(self):
@@ -100,7 +107,7 @@ class AgeDBDataset(Dataset):
         }
         return image.to(self.device), labels
     
-    def get_loaders(self, transform, batch_size, train_size=0.7, test_size=0.2, **kwargs):
+    def get_loaders(self, batch_size, train_size=0.7, test_size=0.2, **kwargs):
         train_len = int(len(self) * train_size)
         test_len = int(len(self) * test_size)
         validate_len = len(self) - (train_len + test_len)
