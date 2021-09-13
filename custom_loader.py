@@ -76,9 +76,6 @@ class AgeDBDataset(Dataset):
             gender = gender_to_class_id[file_labels['gender']]
             age = int(file_labels['age'])
             
-            if age < 18 or age > 78:
-                continue
-            
             self.images.append(image)
             self.labels.append({
                 'age': age,
