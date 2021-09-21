@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader, Dataset
 
 class AgeDBDataset(Dataset):
     
-    def __init__(self, image_list, device, train=False, augment=0, train_transform=None, test_transform=None, **kwargs):
+    def __init__(self, image_list, device, train=False, augment=1, train_transform=None, test_transform=None, **kwargs):
         self.image_list = image_list
         self.device = device
         self.train = train

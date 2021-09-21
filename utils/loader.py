@@ -25,11 +25,11 @@ def get_loader(input_size, train_image_list, test_image_list, validate_image_lis
     train_transform = A.Compose([
         A.Resize(input_size, input_size),
         A.ToGray(p=1),
-        A.Rotate(limit=10, p=0.9),
-        A.HorizontalFlip(p=0.75),
+        A.Rotate(limit=10, p=1),
+        A.HorizontalFlip(p=0.95),
         A.OneOf([
-            A.Blur(blur_limit=3),
-            A.OpticalDistortion(),
+            A.Blur(blur_limit=3, p=1),
+            A.OpticalDistortion(p=1),
         ], p=1),
         ToTensorV2()
     ])

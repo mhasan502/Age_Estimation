@@ -13,10 +13,11 @@ def train(model, optimizer, criterion, train_loader, valid_loader, num_of_epoch,
         train_loss = 0.0
         valid_loss = 0.0
         for i, (imgs, labels) in enumerate(train_loader):
-            imgs = imgs.to(device).float()
+            imgs = imgs.float().to(device)
             labels = torch.as_tensor(labels['age']).to(device)
             
             outputs = model(imgs)
+            
             loss = criterion(outputs, labels)
             optimizer.zero_grad()
             loss.backward()
